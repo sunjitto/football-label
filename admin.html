@@ -34,7 +34,7 @@
         .printed-text { text-decoration: line-through; opacity: 0.6; }
         .badge-printed { background-color: #28a745; color: white; padding: 3px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 
-        /* 🖨️ สไตล์จัดบล็อกพิมพ์ (คลีน ๆ ไม่มีเส้นมาร์ก จัดกึ่งกลางกระดาษ) */
+        /* 🖨️ สไตล์จัดบล็อกพิมพ์ (คลีนขาว ไม่มีมาร์ก จัดกึ่งกลางพอดีกระดาษ) */
         .print-page { display: none; }
         @media print {
             .container { display: none !important; }
@@ -54,15 +54,14 @@
             }
             
             .label-text { 
-                font-family: 'Sarabun', 'Angsana New', Arial, sans-serif; 
+                font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif; 
                 font-size: 20pt; 
                 font-weight: normal;
                 line-height: 1.6; 
                 white-space: pre-line; 
                 color: #000;
-                width: 75%;
+                width: 80%;
                 text-align: left;
-                padding-left: 20px;
             }
         }
     </style>
@@ -90,7 +89,7 @@
                     <th>ชื่อ-นามสกุล</th>
                     <th>ที่อยู่จัดส่ง</th>
                     <th>เบอร์โทรศัพท์</th>
-                    <th style="width: 80px; text-align: center;">จำนวน (ใบ)</th>
+                    <th style="width: 90px; text-align: center;">จำนวน (ใบ)</th>
                     <th style="width: 120px;">สถานะ</th>
                     <th style="width: 160px;">การจัดการ</th>
                 </tr>
@@ -116,7 +115,6 @@
             fetch(scriptUrl)
             .then(res => res.json())
             .then(data => {
-                // อัปเดตการดึงคอลัมน์ตามโครงสร้าง Web App
                 rawData = data.filter(item => item.name || item.address).reverse(); 
                 renderTable(rawData);
             })
@@ -136,9 +134,7 @@
                         formattedPhone = '0' + formattedPhone;
                     }
 
-                    // ตรวจเช็กจำนวนใบ (ถ้าไม่มีให้ขึ้นเป็นเลข 1)
                     let qty = item.quantity ? item.quantity : 1;
-
                     const rowKey = (item.name || '') + '_' + formattedPhone;
                     const isPrinted = printedRows.includes(rowKey);
 
@@ -170,6 +166,7 @@
             checkboxes.forEach(chk => chk.checked = master.checked);
         }
 
+        /* ระบบค้นหาแบบเรียลไทม์ */
         function searchTable() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const filteredData = rawData.filter(item => {
@@ -180,11 +177,12 @@
             renderTable(filteredData);
         }
 
+        /* ฟังก์ชันพิมพ์ป้ายจ่าหน้าขนาดฟอนต์อ่านง่าย พอดีกระดาษ */
         function printLabel(name, address, phone, rowKey, index) {
             document.getElementById('print-content').innerHTML = `
                 <div>${name}</div>
-                <div style="margin-top: 10px;">${address}</div>
-                <div style="margin-top: 10px;">โทร. ${phone}</div>
+                <div style="margin-top: 8px;">${address}</div>
+                <div style="margin-top: 8px;">โทร. ${phone}</div>
             `;
             window.print();
 
@@ -207,7 +205,7 @@
                 printedRows.splice(keyIndex, 1);
                 rowElement.classList.remove('printed-row');
                 rowElement.querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 5) td.classList.remove('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>';
             } else {
