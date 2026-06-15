@@ -183,8 +183,8 @@
         /* ฟังก์ชันพิมพ์ป้ายจ่าหน้าขนาดฟอนต์อ่านง่าย พอดีกระดาษ */
         function printLabel(name, address, phone, rowKey, index) {
             document.getElementById('print-content').innerHTML = `
-                <div>ผู้รับ: ${name}</div>
-                <div style="margin-top: 8px;">ที่อยู่: ${address}</div>
+                <div>${name}</div>
+                <div style="margin-top: 8px;">${address}</div>
                 <div style="margin-top: 8px;">โทร: ${phone}</div>
             `;
             window.print();
