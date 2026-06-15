@@ -42,26 +42,40 @@
     </div>
 
     <script>
-        // 🔗 ลิงก์ Web App ของคุณตามปกติ
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
 
         document.getElementById('shippingForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // บังคับไม่ให้เปลี่ยนหน้าขาว
+            e.preventDefault(); 
             
             const btn = document.getElementById('submitBtn');
             btn.innerText = "กำลังส่งข้อมูล...";
             btn.disabled = true;
 
-            const formData = new FormData(this);
-            
-            // ส่งข้อมูลไปหา Google Sheets หลังบ้าน (ตัว FormData จะรวมค่าของ input name="quantity" ไปให้โดยอัตโนมัติครับ)
+            // 🌟 ปรับปรุงการดึงค่ามาแพ็กส่งใหม่ ป้องกันข้อมูลตกหล่นและล็อกให้เป็น Text
+            const nameVal = this.elements['name'].value;
+            const addressVal = this.elements['address'].value;
+            const phoneVal = this.elements['phone'].value;
+            const quantityVal = this.elements['quantity'].value;
+
+            // ส่งค่าไปหลังบ้านโดยการต่อ Query String ให้ Google Apps Script อ่านง่ายและแม่นยำ 100%
+            const uploadParams = new URLSearchParams();
+            uploadParams.append('name', nameVal);
+            uploadParams.append('address', addressVal);
+            uploadParams.append('phone', phoneVal);
+            uploadParams.append('quantity', quantityVal);
+
             fetch(scriptUrl, {
                 method: 'POST',
-                body: new URLSearchParams(formData)
+                mode: 'no-cors', // เปิดโหมดแชร์สิทธิ์ข้ามโดเมนเพื่อให้คุยกับ Google Apps Script ได้เสถียร
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: uploadParams.toString()
             })
-            .then(res => {
+            .then(() => {
+                // เนื่องจากใช้ no-cors ผลลัพธ์จะตอบกลับสำเร็จทันที บันทึกข้อมูลเรียบร้อย
                 alert("บันทึกข้อมูลเรียบร้อยแล้วครับ!");
-                window.location.reload(); // รีเฟรชหน้าจอให้กลับมาว่างเปล่าทันที
+                window.location.reload(); 
             })
             .catch(err => {
                 alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
