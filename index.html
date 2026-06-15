@@ -34,16 +34,19 @@
             <label>เบอร์โทร (ตัวเลข 10 หลัก):</label>
             <input type="text" name="phone" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" placeholder="เช่น 0812345678">
             
+            <label>จำนวนที่ต้องการพิมพ์ (ใบ):</label>
+            <input type="number" id="quantity" name="quantity" min="1" value="1" required placeholder="ระบุจำนวนใบ เช่น 1">
+            
             <button type="submit" id="submitBtn">ส่งข้อมูลจ่าหน้า</button>
         </form>
     </div>
 
     <script>
-        // ใส่ลิงก์ Web App ของคุณตรงนี้
+        // 🔗 ลิงก์ Web App ของคุณตามปกติ
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
 
         document.getElementById('shippingForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // บังคับไม่ให้หน้าเว็บเปลี่ยนหน้าขาว
+            e.preventDefault(); // บังคับไม่ให้เปลี่ยนหน้าขาว
             
             const btn = document.getElementById('submitBtn');
             btn.innerText = "กำลังส่งข้อมูล...";
@@ -51,7 +54,7 @@
 
             const formData = new FormData(this);
             
-            // ส่งข้อมูลไปหา Google Sheets หลังบ้าน
+            // ส่งข้อมูลไปหา Google Sheets หลังบ้าน (ตัว FormData จะรวมค่าของ input name="quantity" ไปให้โดยอัตโนมัติครับ)
             fetch(scriptUrl, {
                 method: 'POST',
                 body: new URLSearchParams(formData)

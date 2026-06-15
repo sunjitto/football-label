@@ -6,7 +6,7 @@
     <title>ระบบหลังบ้าน - บริหารจัดการและพิมพ์ใบปะหน้า</title>
     <style>
         body { font-family: sans-serif; background: #eef1f5; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { color: #333; margin-top: 0; }
         .control-panel { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: center; justify-content: space-between; }
         .search-box { padding: 10px 15px; border: 1px solid #ccc; border-radius: 6px; width: 250px; font-size: 15px; }
@@ -27,6 +27,7 @@
         
         .chk-col { text-align: center; width: 40px; }
         .chk-box { width: 18px; height: 18px; cursor: pointer; }
+        .qty-col { text-align: center; font-weight: bold; color: #d9534f; font-size: 16px; }
 
         /* แถวที่พิมพ์แล้ว */
         .printed-row { background-color: #e9ecef !important; color: #6c757d; }
@@ -40,7 +41,6 @@
             @page { size: 6in 4in landscape; margin: 0; }
             html, body { background: none; margin: 0; padding: 0; width: 6in; height: 4in; overflow: hidden; }
             
-            /* พื้นหลังกระดาษ 6x4 นิ้ว จัดข้อความอยู่ตรงกลางพอดี */
             .print-page { 
                 display: flex !important; 
                 justify-content: center;
@@ -53,7 +53,6 @@
                 page-break-after: always;
             }
             
-            /* กล่องข้อความขนาดและระยะฟอนต์ตามรูปที่ต้องการ */
             .label-text { 
                 font-family: 'Sarabun', 'Angsana New', Arial, sans-serif; 
                 font-size: 20pt; 
@@ -91,12 +90,13 @@
                     <th>ชื่อ-นามสกุล</th>
                     <th>ที่อยู่จัดส่ง</th>
                     <th>เบอร์โทรศัพท์</th>
+                    <th style="width: 80px; text-align: center;">จำนวน (ใบ)</th>
                     <th style="width: 120px;">สถานะ</th>
                     <th style="width: 160px;">การจัดการ</th>
                 </tr>
             </thead>
             <tbody id="table-body">
-                <tr><td colspan="6" style="text-align: center; color: #666;">กำลังโหลดข้อมูล...</td></tr>
+                <tr><td colspan="7" style="text-align: center; color: #666;">กำลังโหลดข้อมูล...</td></tr>
             </tbody>
         </table>
     </div>
@@ -111,29 +111,33 @@
         let printedRows = JSON.parse(localStorage.getItem('printed_rows_list')) || [];
 
         function loadData() {
-            document.getElementById('table-body').innerHTML = `<tr><td colspan="6" style="text-align: center; color: #666;">กำลังโหลดข้อมูลล่าสุด...</td></tr>`;
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align: center; color: #666;">กำลังโหลดข้อมูลล่าสุด...</td></tr>`;
             document.getElementById('selectAll').checked = false;
             fetch(scriptUrl)
             .then(res => res.json())
             .then(data => {
+                // อัปเดตการดึงคอลัมน์ตามโครงสร้าง Web App
                 rawData = data.filter(item => item.name || item.address).reverse(); 
                 renderTable(rawData);
             })
             .catch(err => {
-                document.getElementById('table-body').innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">โหลดล้มเหลว กรุณารีเฟรชใหม่</td></tr>`;
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">โหลดล้มเหลว กรุณารีเฟรชใหม่</td></tr>`;
             });
         }
 
         function renderTable(data) {
             let html = '';
             if(data.length === 0) {
-                html = `<tr><td colspan="6" style="text-align: center; color: #999;">ไม่มีข้อมูลรอพิมพ์</td></tr>`;
+                html = `<tr><td colspan="7" style="text-align: center; color: #999;">ไม่มีข้อมูลรอพิมพ์</td></tr>`;
             } else {
                 data.forEach((item, index) => {
                     let formattedPhone = item.phone ? item.phone.toString().trim() : '';
                     if (formattedPhone && formattedPhone.length === 9 && !formattedPhone.startsWith('0')) {
                         formattedPhone = '0' + formattedPhone;
                     }
+
+                    // ตรวจเช็กจำนวนใบ (ถ้าไม่มีให้ขึ้นเป็นเลข 1)
+                    let qty = item.quantity ? item.quantity : 1;
 
                     const rowKey = (item.name || '') + '_' + formattedPhone;
                     const isPrinted = printedRows.includes(rowKey);
@@ -145,6 +149,7 @@
                         <td class="${isPrinted ? 'printed-text' : ''}">${item.name || ''}</td>
                         <td class="${isPrinted ? 'printed-text' : ''}">${item.address || ''}</td>
                         <td class="${isPrinted ? 'printed-text' : ''}">${formattedPhone}</td>
+                        <td class="qty-col ${isPrinted ? 'printed-text' : ''}">${qty}</td>
                         <td id="status-${index}">
                             ${isPrinted ? '<span class="badge-printed">✅ พิมพ์แล้ว</span>' : '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>'}
                         </td>
@@ -188,7 +193,7 @@
                 localStorage.setItem('printed_rows_list', JSON.stringify(printedRows));
                 document.getElementById(`tr-${index}`).classList.add('printed-row');
                 document.getElementById(`tr-${index}`).querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 4) td.classList.add('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span class="badge-printed">✅ พิมพ์แล้ว</span>';
             }
@@ -202,14 +207,14 @@
                 printedRows.splice(keyIndex, 1);
                 rowElement.classList.remove('printed-row');
                 rowElement.querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 4) td.classList.remove('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.remove('printed-text');
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>';
             } else {
                 printedRows.push(rowKey);
                 rowElement.classList.add('printed-row');
                 rowElement.querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 4) td.classList.add('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span class="badge-printed">✅ พิมพ์แล้ว</span>';
             }
@@ -221,7 +226,7 @@
             if (checkedBoxes.length === 0) {
                 return alert("กรุณาติ๊กเลือกรายการที่ต้องการเซฟลง Excel ก่อนครับ");
             }
-            let csvContent = "\uFEFF" + "ชื่อ-นามสกุล,ที่อยู่,เบอร์โทร\n";
+            let csvContent = "\uFEFF" + "ชื่อ-นามสกุล,ที่อยู่,เบอร์โทร,จำนวนใบ\n";
             checkedBoxes.forEach(chk => {
                 const index = chk.getAttribute('data-index');
                 const item = rawData[index];
@@ -230,7 +235,8 @@
                     if (phoneStr && phoneStr.length === 9 && !phoneStr.startsWith('0')) {
                         phoneStr = '0' + phoneStr;
                     }
-                    csvContent += `"${(item.name || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","\t${phoneStr}"\n`;
+                    let qty = item.quantity ? item.quantity : 1;
+                    csvContent += `"${(item.name || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","\t${phoneStr}","${qty}"\n`;
                 }
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
