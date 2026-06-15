@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กรอกข้อมูลสำหรับพิมพ์จ่าหน้าไปรษณีย์บัตรทายผลฟุตบอล</title>
+    <style>
+        body { 
+            font-family: 'Noto Sans Thai', sans-serif; 
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.6)), 
+                        url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed; 
+            background-size: cover; margin: 0; padding: 40px 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box;
+        }
+        .box { width: 100%; max-width: 450px; background: rgba(255, 255, 255, 0.95); padding: 35px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; }
+        h2 { margin-top: 0; margin-bottom: 25px; color: #1e4620; text-align: center; font-size: 22px; font-weight: bold; line-height: 1.4; }
+        label { display: block; margin-bottom: 6px; color: #333; font-size: 15px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 12px 14px; margin-bottom: 20px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        input:focus, textarea:focus { border-color: #28a745; outline: none; box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); }
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #28a745, #1e7e34); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: all 0.2s; }
+        button:hover { background: linear-gradient(135deg, #218838, #19692c); }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>⚽ กรอกข้อมูลสำหรับพิมพ์จ่าหน้า<br>ไปรษณีย์บัตรทายผลฟุตบอล</h2>
+        
+        <form id="shippingForm">
+            <label>ชื่อ-นามสกุล:</label>
+            <input type="text" name="name" required placeholder="เช่น นายสมชาย สายลุย">
+            
+            <label>ที่อยู่:</label>
+            <textarea name="address" rows="4" required placeholder="กรอกที่อยู่สำหรับจัดส่งให้ครบถ้วน"></textarea>
+            
+            <label>เบอร์โทร (ตัวเลข 10 หลัก):</label>
+            <input type="text" name="phone" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" placeholder="เช่น 0812345678">
+            
+            <button type="submit" id="submitBtn">ส่งข้อมูลจ่าหน้า</button>
+        </form>
+    </div>
+
+    <script>
+        // ใส่ลิงก์ Web App ของคุณตรงนี้
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
+
+        document.getElementById('shippingForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // บังคับไม่ให้หน้าเว็บเปลี่ยนหน้าขาว
+            
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "กำลังส่งข้อมูล...";
+            btn.disabled = true;
+
+            const formData = new FormData(this);
+            
+            // ส่งข้อมูลไปหา Google Sheets หลังบ้าน
+            fetch(scriptUrl, {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+            .then(res => {
+                alert("บันทึกข้อมูลเรียบร้อยแล้วครับ!");
+                window.location.reload(); // รีเฟรชหน้าจอให้กลับมาว่างเปล่าทันที
+            })
+            .catch(err => {
+                alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+                btn.innerText = "ส่งข้อมูลจ่าหน้า";
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
