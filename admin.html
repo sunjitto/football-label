@@ -134,7 +134,8 @@
                         formattedPhone = '0' + formattedPhone;
                     }
 
-                    let qty = item.quantity ? item.quantity : 1;
+                    // 🌟 เปลี่ยนมาดึงค่าจากตัวแปรภาษาไทยคำว่า 'จำนวน' หรือ 'quantity' เพื่อความยืดหยุ่นสูง
+                    let qty = item.จำนวน || item.quantity || 1;
                     const rowKey = (item.name || '') + '_' + formattedPhone;
                     const isPrinted = printedRows.includes(rowKey);
 
@@ -151,7 +152,7 @@
                         </td>
                         <td>
                             <div class="action-btns">
-                                <button class="btn-table btn-print" onclick="printLabel('${item.name}', '${item.address}', '${formattedPhone}', '${rowKey}', ${index})">พิมพ์ 4x6</button>
+                                <button class="btn-table btn-print" onclick="printLabel('${item.name || ''}', '${item.address || ''}', '${formattedPhone}', '${rowKey}', ${index})">พิมพ์ 4x6</button>
                                 <button class="btn-table btn-status" onclick="toggleStatus('${rowKey}', ${index})">สลับสถานะ</button>
                             </div>
                         </td>
@@ -170,8 +171,10 @@
         function searchTable() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const filteredData = rawData.filter(item => {
+                let qtyStr = (item.จำนวน || item.quantity || 1).toString();
                 return (item.name && item.name.toLowerCase().includes(searchText)) || 
                        (item.address && item.address.toLowerCase().includes(searchText)) || 
+                       (qtyStr.includes(searchText)) ||
                        (item.phone && item.phone.toString().toLowerCase().includes(searchText));
             });
             renderTable(filteredData);
@@ -180,9 +183,9 @@
         /* ฟังก์ชันพิมพ์ป้ายจ่าหน้าขนาดฟอนต์อ่านง่าย พอดีกระดาษ */
         function printLabel(name, address, phone, rowKey, index) {
             document.getElementById('print-content').innerHTML = `
-                <div>${name}</div>
-                <div style="margin-top: 8px;">${address}</div>
-                <div style="margin-top: 8px;">โทร. ${phone}</div>
+                <div>ผู้รับ: ${name}</div>
+                <div style="margin-top: 8px;">ที่อยู่: ${address}</div>
+                <div style="margin-top: 8px;">โทร: ${phone}</div>
             `;
             window.print();
 
@@ -197,22 +200,25 @@
             }
         }
 
+        /* 🌟 แก้ไขบั๊กฟังก์ชันสลับสถานะให้ทำงานได้อย่างถูกต้อง */
         function toggleStatus(rowKey, index) {
             const keyIndex = printedRows.indexOf(rowKey);
             const rowElement = document.getElementById(`tr-${index}`);
             
             if (keyIndex > -1) {
+                // เปลี่ยนสถานะกลับเป็น "รอพิมพ์"
                 printedRows.splice(keyIndex, 1);
                 rowElement.classList.remove('printed-row');
                 rowElement.querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.remove('printed-text'); // เอาขีดฆ่าออก
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>';
             } else {
+                // เปลี่ยนสถานะเป็น "พิมพ์แล้ว"
                 printedRows.push(rowKey);
                 rowElement.classList.add('printed-row');
                 rowElement.querySelectorAll('td').forEach((td, idx) => {
-                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text'); // ใส่ขีดฆ่า
                 });
                 document.getElementById(`status-${index}`).innerHTML = '<span class="badge-printed">✅ พิมพ์แล้ว</span>';
             }
@@ -233,7 +239,7 @@
                     if (phoneStr && phoneStr.length === 9 && !phoneStr.startsWith('0')) {
                         phoneStr = '0' + phoneStr;
                     }
-                    let qty = item.quantity ? item.quantity : 1;
+                    let qty = item.จำนวน || item.quantity || 1;
                     csvContent += `"${(item.name || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","\t${phoneStr}","${qty}"\n`;
                 }
             });
