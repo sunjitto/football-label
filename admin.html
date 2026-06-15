@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบหลังบ้าน - บริหารจัดการและพิมพ์ใบปะหน้า</title>
+    <style>
+        body { font-family: sans-serif; background: #eef1f5; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #333; margin-top: 0; }
+        .control-panel { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: center; justify-content: space-between; }
+        .search-box { padding: 10px 15px; border: 1px solid #ccc; border-radius: 6px; width: 250px; font-size: 15px; }
+        .btn { border: none; padding: 10px 18px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; text-decoration: none; display: inline-block; transition: all 0.2s; }
+        .btn-refresh { background-color: #007bff; color: white; }
+        .btn-export { background-color: #28a745; color: white; }
+        .btn-sheet { background-color: #6f42c1; color: white; }
+        .btn-delete-selected { background-color: #dc3545; color: white; }
+        .btn:hover { opacity: 0.9; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #e0e0e0; padding: 14px; text-align: left; font-size: 15px; }
+        th { background-color: #343a40; color: white; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-table { border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 14px; font-weight: bold; color: white; }
+        .btn-print { background-color: #dc3545; }
+        
+        /* สไตล์กล่องติ๊กถูก */
+        .chk-col { text-align: center; width: 40px; }
+        .chk-box { width: 18px; height: 18px; cursor: pointer; }
+
+        .print-page { display: none; }
+        @media print {
+            .container { display: none !important; }
+            .print-page { display: block !important; width: 6in; height: 4in; padding: 0.4in; box-sizing: border-box; }
+            @page { size: 6in 4in landscape; margin: 0; }
+            .label-text { font-family: 'Angsana New', sans-serif; font-size: 26pt; line-height: 1.4; white-space: pre-line; color: #000; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📊 ระบบจัดการข้อมูลไปรษณีย์บัตร (รอพิมพ์)</h2>
+        
+        <div class="control-panel">
+            <div>
+                <input type="text" id="searchInput" class="search-box" onkeyup="searchTable()" placeholder="🔍 ค้นหาข้อมูล...">
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-delete-selected" onclick="deleteSelected()">🗑️ ลบรายการที่เลือก</button>
+                <button class="btn btn-export" onclick="exportSelectedToCSV()">💾 เซฟเฉพาะที่เลือกลง Excel</button>
+                <a href="https://docs.google.com/spreadsheets/" target="_blank" class="btn btn-sheet">🟢 เปิด Google Sheets</a>
+                <button class="btn btn-refresh" onclick="loadData()">🔄 รีเฟรชข้อมูล</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="chk-col"><input type="checkbox" id="selectAll" class="chk-box" onclick="toggleSelectAll(this)"></th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>ที่อยู่จัดส่ง</th>
+                    <th>เบอร์โทรศัพท์</th>
+                    <th style="width: 100px;">การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr><td colspan="5" style="text-align: center; color: #666;">กำลังโหลดข้อมูล...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="print-page">
+        <div class="label-text" id="print-content"></div>
+    </div>
+
+    <script>
+        // 🔗 วางลิงก์ Web App ของคุณตรงนี้ครับ
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
+        let rawData = [];
+
+        function loadData() {
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">กำลังโหลดข้อมูลล่าสุด...</td></tr>`;
+            document.getElementById('selectAll').checked = false;
+            fetch(scriptUrl)
+            .then(res => res.json())
+            .then(data => {
+                rawData = data.filter(item => item.name || item.address).reverse(); 
+                renderTable(rawData);
+            })
+            .catch(err => {
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">โหลดล้มเหลว กรุณารีเฟรชใหม่</td></tr>`;
+            });
+        }
+
+        function renderTable(data) {
+            let html = '';
+            if(data.length === 0) {
+                html = `<tr><td colspan="5" style="text-align: center; color: #999;">ไม่มีข้อมูลรอพิมพ์</td></tr>`;
+            } else {
+                data.forEach((item, index) => {
+                    html += `<tr>
+                        <td class="chk-col">
+                            <input type="checkbox" class="chk-box item-chk" data-rownum="${item.rowNum}" data-index="${index}">
+                        </td>
+                        <td>${item.name || ''}</td>
+                        <td>${item.address || ''}</td>
+                        <td>${item.phone || ''}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-table btn-print" onclick="printLabel('${item.name}', '${item.address}', '${item.phone}')">พิมพ์ 4x6</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('table-body').innerHTML = html;
+        }
+
+        // ฟังก์ชันติ๊กเลือกทั้งหมด / ยกเลิกทั้งหมด
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.item-chk');
+            checkboxes.forEach(chk => chk.checked = master.checked);
+        }
+
+        function searchTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = rawData.filter(item => {
+                return (item.name && item.name.toLowerCase().includes(searchText)) || 
+                       (item.address && item.address.toLowerCase().includes(searchText)) || 
+                       (item.phone && item.phone.toLowerCase().includes(searchText));
+            });
+            renderTable(filteredData);
+        }
+
+        function printLabel(name, address, phone) {
+            document.getElementById('print-content').innerHTML = `
+                <div>${name}</div>
+                <div style="margin-top: 15px;">${address}</div>
+                <div style="margin-top: 15px;">โทร. ${phone}</div>
+            `;
+            window.print();
+        }
+
+        // 🌟 ฟังก์ชันใหม่: สั่งลบข้อมูลเฉพาะรายการที่ถูกเลือก (ติ๊กถูก) ออกจาก Sheet จริง
+        function deleteSelected() {
+            const checkedBoxes = document.querySelectorAll('.item-chk:checked');
+            if (checkedBoxes.length === 0) {
+                return alert("กรุณาติ๊กเลือกรายการที่ต้องการลบก่อนครับ");
+            }
+
+            if (confirm(`คุณต้องการลบข้อมูลที่เลือกทั้งหมดจำนวน ${checkedBoxes.length} รายการออกจาก Google Sheets ใช่หรือไม่?`)) {
+                // ดึงเลขแถว (rowNum) ของทุกตัวที่ติ๊กถูกออกมารวมกันเป็นชุด
+                const rowNums = Array.from(checkedBoxes).map(chk => chk.getAttribute('data-rownum')).join(',');
+
+                // ส่งคำสั่งลบแบบกลุ่มไปที่ Web App ตัวใหม่
+                fetch(`${scriptUrl}?action=delete_bulk&rowNums=${rowNums}`, {
+                    method: 'POST'
+                })
+                .then(res => {
+                    alert("ลบข้อมูลออกจาก Google Sheets เรียบร้อยแล้ว!");
+                    loadData(); // รีเฟรชตารางหน้าเว็บใหม่
+                })
+                .catch(err => alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบลบ"));
+            }
+        }
+
+        // 🌟 ฟังก์ชันใหม่: เซฟเฉพาะรายการที่เลือก (ติ๊กถูก) ออกเป็นไฟล์ Excel
+        function exportSelectedToCSV() {
+            const checkedBoxes = document.querySelectorAll('.item-chk:checked');
+            if (checkedBoxes.length === 0) {
+                return alert("กรุณาติ๊กเลือกรายการที่ต้องการเซฟลง Excel ก่อนครับ");
+            }
+
+            let csvContent = "\uFEFF" + "ชื่อ-นามสกุล,ที่อยู่,เบอร์โทร\n";
+            
+            checkedBoxes.forEach(chk => {
+                const index = chk.getAttribute('data-index');
+                const item = rawData[index];
+                if(item) {
+                    csvContent += `"${(item.name || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","${(item.phone || '').replace(/"/g, '""')}"\n`;
+                }
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `ข้อมูลจ่าหน้า_เฉพาะที่เลือก_${new Date().toLocaleDateString('th-TH')}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
