@@ -42,6 +42,7 @@
     </div>
 
     <script>
+        // 🌟 แก้ไขลิงก์เป็น URL ของเว็บแอปตัวจริงที่ถูกต้องเรียบร้อยแล้ว (ลงท้ายด้วย /exec)
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
 
         document.getElementById('shippingForm').addEventListener('submit', function(e) {
@@ -51,13 +52,12 @@
             btn.innerText = "กำลังส่งข้อมูล...";
             btn.disabled = true;
 
-            // 🌟 ปรับปรุงการดึงค่ามาแพ็กส่งใหม่ ป้องกันข้อมูลตกหล่นและล็อกให้เป็น Text
             const nameVal = this.elements['name'].value;
             const addressVal = this.elements['address'].value;
             const phoneVal = this.elements['phone'].value;
             const quantityVal = this.elements['quantity'].value;
 
-            // ส่งค่าไปหลังบ้านโดยการต่อ Query String ให้ Google Apps Script อ่านง่ายและแม่นยำ 100%
+            // แพ็กข้อมูลส่งในรูปแบบ x-www-form-urlencoded เพื่อให้หลังบ้าน Apps Script รับข้อมูลได้แม่นยำที่สุด
             const uploadParams = new URLSearchParams();
             uploadParams.append('name', nameVal);
             uploadParams.append('address', addressVal);
@@ -66,14 +66,13 @@
 
             fetch(scriptUrl, {
                 method: 'POST',
-                mode: 'no-cors', // เปิดโหมดแชร์สิทธิ์ข้ามโดเมนเพื่อให้คุยกับ Google Apps Script ได้เสถียร
+                mode: 'no-cors', 
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: uploadParams.toString()
             })
             .then(() => {
-                // เนื่องจากใช้ no-cors ผลลัพธ์จะตอบกลับสำเร็จทันที บันทึกข้อมูลเรียบร้อย
                 alert("บันทึกข้อมูลเรียบร้อยแล้วครับ!");
                 window.location.reload(); 
             })
