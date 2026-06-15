@@ -107,7 +107,7 @@
     <script>
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
         let rawData = [];
-        let viewData = []; // เก็บข้อมูลแถวที่กำลังแสดงผลหน้าเว็บบนตาราง
+        let viewData = []; 
         let printedRows = JSON.parse(localStorage.getItem('printed_rows_list')) || [];
 
         function loadData() {
@@ -125,7 +125,7 @@
         }
 
         function renderTable(data) {
-            viewData = data; // อัปเดตข้อมูลแถวปัจจุบัน
+            viewData = data; 
             let html = '';
             if(data.length === 0) {
                 html = `<tr><td colspan="7" style="text-align: center; color: #999;">ไม่มีข้อมูลรอพิมพ์</td></tr>`;
@@ -140,8 +140,8 @@
                     const rowKey = (item.name || '') + '_' + formattedPhone;
                     const isPrinted = printedRows.includes(rowKey);
 
-                    // 📱 แปลงข้อความที่อยู่สำหรับโชว์ในตารางให้เห็นการขึ้นบรรทัดใหม่สวยๆ
-                    let displayAddress = item.address ? item.address.toString().replace(/\n/g, '<br>') : '';
+                    // 📱 จัดการแปลงอักขระเว้นบรรทัดสำหรับแสดงผลในตาราง
+                    let displayAddress = item.address ? item.address.toString().replace(/\n/g, '<br>').replace(/\r/g, '') : '';
 
                     html += `<tr id="tr-${index}" class="${isPrinted ? 'printed-row' : ''}">
                         <td class="chk-col">
@@ -155,4 +155,116 @@
                             ${isPrinted ? '<span class="badge-printed">✅ พิมพ์แล้ว</span>' : '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>'}
                         </td>
                         <td>
-                            <div class="action-
+                            <div class="action-btns">
+                                <button class="btn-table btn-print" onclick="printLabelByIndex(${index}, '${rowKey}')">พิมพ์ 4x6</button>
+                                <button class="btn-table btn-status" onclick="toggleStatus('${rowKey}', ${index})">สลับสถานะ</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('table-body').innerHTML = html;
+        }
+
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.item-chk');
+            checkboxes.forEach(chk => chk.checked = master.checked);
+        }
+
+        /* 🌟 แก้ไขจุดตายจุดที่ 2: ระบบค้นหาให้รองรับข้อความที่เคาะเว้นบรรทัด */
+        function searchTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = rawData.filter(item => {
+                let qtyStr = (item.จำนวน || item.quantity || 1).toString();
+                // แปลงข้อความของแอดรสให้เป็นแบบไม่มีเว้นบรรทัดตอนเอาไปเปรียบเทียบคำค้นหา
+                let cleanAddressForSearch = item.address ? item.address.toString().toLowerCase().replace(/\n/g, ' ').replace(/\r/g, '') : '';
+                
+                return (item.name && item.name.toLowerCase().includes(searchText)) || 
+                       cleanAddressForSearch.includes(searchText) || 
+                       qtyStr.includes(searchText) ||
+                       (item.phone && item.phone.toString().toLowerCase().includes(searchText));
+            });
+            renderTable(filteredData);
+        }
+
+        /* ฟังก์ชันพิมพ์ระบบใหม่ ดึงค่าปลอดภัยจากอาร์เรย์โดยตรง สะอาดและเสถียรที่สุด */
+        function printLabelByIndex(index, rowKey) {
+            const item = viewData[index];
+            if (!item) return;
+
+            let formattedPhone = item.phone ? item.phone.toString().trim() : '';
+            if (formattedPhone && formattedPhone.length === 9 && !formattedPhone.startsWith('0')) {
+                formattedPhone = '0' + formattedPhone;
+            }
+
+            // ขัดเงาข้อมูลจ่าหน้า ไม่มีคำว่า "ผู้รับ:" หรือ "ที่อยู่:" รบกวน และรองรับการขึ้นบรรทัดใหม่ในการพิมพ์ได้สมบูรณ์แบบ
+            document.getElementById('print-content').innerHTML = `
+                <div>${item.name || ''}</div>
+                <div style="margin-top: 8px;">${item.address || ''}</div>
+                <div style="margin-top: 8px;">โทร: ${formattedPhone}</div>
+            `;
+            window.print();
+
+            if (!printedRows.includes(rowKey)) {
+                printedRows.push(rowKey);
+                localStorage.setItem('printed_rows_list', JSON.stringify(printedRows));
+                document.getElementById(`tr-${index}`).classList.add('printed-row');
+                document.getElementById(`tr-${index}`).querySelectorAll('td').forEach((td, idx) => {
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
+                });
+                document.getElementById(`status-${index}`).innerHTML = '<span class="badge-printed">✅ พิมพ์แล้ว</span>';
+            }
+        }
+
+        function toggleStatus(rowKey, index) {
+            const keyIndex = printedRows.indexOf(rowKey);
+            const rowElement = document.getElementById(`tr-${index}`);
+            
+            if (keyIndex > -1) {
+                printedRows.splice(keyIndex, 1);
+                rowElement.classList.remove('printed-row');
+                rowElement.querySelectorAll('td').forEach((td, idx) => {
+                    if(idx > 0 && idx < 5) td.classList.remove('printed-text');
+                });
+                document.getElementById(`status-${index}`).innerHTML = '<span style="color:#e0a800; font-weight:bold;">⏳ รอพิมพ์</span>';
+            } else {
+                printedRows.push(rowKey);
+                rowElement.classList.add('printed-row');
+                rowElement.querySelectorAll('td').forEach((td, idx) => {
+                    if(idx > 0 && idx < 5) td.classList.add('printed-text');
+                });
+                document.getElementById(`status-${index}`).innerHTML = '<span class="badge-printed">✅ พิมพ์แล้ว</span>';
+            }
+            localStorage.setItem('printed_rows_list', JSON.stringify(printedRows));
+        }
+
+        function exportSelectedToCSV() {
+            const checkedBoxes = document.querySelectorAll('.item-chk:checked');
+            if (checkedBoxes.length === 0) {
+                return alert("กรุณาติ๊กเลือกรายการที่ต้องการเซฟลง Excel ก่อนครับ");
+            }
+            let csvContent = "\uFEFF" + "ชื่อ-นามสกุล,ที่อยู่,เบอร์โทร,จำนวนใบ\n";
+            checkedBoxes.forEach(chk => {
+                const index = chk.getAttribute('data-index');
+                const item = viewData[index];
+                if(item) {
+                    let phoneStr = item.phone ? item.phone.toString().trim() : '';
+                    if (phoneStr && phoneStr.length === 9 && !phoneStr.startsWith('0')) {
+                        phoneStr = '0' + phoneStr;
+                    }
+                    let qty = item.จำนวน || item.quantity || 1;
+                    let cleanAddress = (item.address || '').replace(/"/g, '""');
+                    csvContent += `"${(item.name || '').replace(/"/g, '""')}","${cleanAddress}","\t${phoneStr}","${qty}"\n`;
+                }
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `ข้อมูลจ่าหน้า_${new Date().toLocaleDateString('th-TH')}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
