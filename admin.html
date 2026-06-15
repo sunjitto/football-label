@@ -140,7 +140,7 @@
                     const rowKey = (item.name || '') + '_' + formattedPhone;
                     const isPrinted = printedRows.includes(rowKey);
 
-                    // 📱 จัดการแปลงอักขระเว้นบรรทัดสำหรับแสดงผลในตาราง
+                    // 📱 จัดการแปลงอักขระเว้นบรรทัดสำหรับแสดงผลในตารางแถวหน้าเว็บให้สวยงาม
                     let displayAddress = item.address ? item.address.toString().replace(/\n/g, '<br>').replace(/\r/g, '') : '';
 
                     html += `<tr id="tr-${index}" class="${isPrinted ? 'printed-row' : ''}">
@@ -171,12 +171,11 @@
             checkboxes.forEach(chk => chk.checked = master.checked);
         }
 
-        /* 🌟 แก้ไขจุดตายจุดที่ 2: ระบบค้นหาให้รองรับข้อความที่เคาะเว้นบรรทัด */
+        /* ระบบค้นหาแถวแบบเรียลไทม์ */
         function searchTable() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const filteredData = rawData.filter(item => {
                 let qtyStr = (item.จำนวน || item.quantity || 1).toString();
-                // แปลงข้อความของแอดรสให้เป็นแบบไม่มีเว้นบรรทัดตอนเอาไปเปรียบเทียบคำค้นหา
                 let cleanAddressForSearch = item.address ? item.address.toString().toLowerCase().replace(/\n/g, ' ').replace(/\r/g, '') : '';
                 
                 return (item.name && item.name.toLowerCase().includes(searchText)) || 
@@ -187,7 +186,7 @@
             renderTable(filteredData);
         }
 
-        /* ฟังก์ชันพิมพ์ระบบใหม่ ดึงค่าปลอดภัยจากอาร์เรย์โดยตรง สะอาดและเสถียรที่สุด */
+        /* ฟังก์ชันพิมพ์ระบบใหม่ ดึงค่าปลอดภัยจากอาร์เรย์ที่ทำความสะอาดเรียบร้อยแล้ว */
         function printLabelByIndex(index, rowKey) {
             const item = viewData[index];
             if (!item) return;
@@ -197,7 +196,7 @@
                 formattedPhone = '0' + formattedPhone;
             }
 
-            // ขัดเงาข้อมูลจ่าหน้า ไม่มีคำว่า "ผู้รับ:" หรือ "ที่อยู่:" รบกวน และรองรับการขึ้นบรรทัดใหม่ในการพิมพ์ได้สมบูรณ์แบบ
+            // ขัดเงาข้อมูลจ่าหน้า ไม่มีคำว่า "ผู้รับ:" หรือ "ที่อยู่:" รบกวน และคงการเว้นบรรทัดสติกเกอร์อย่างแม่นยำ
             document.getElementById('print-content').innerHTML = `
                 <div>${item.name || ''}</div>
                 <div style="margin-top: 8px;">${item.address || ''}</div>
