@@ -139,7 +139,9 @@
                     const rowKey = 'row_' + item.rowNum; 
                     const isPrinted = printedRows.includes(rowKey);
 
-                    let displayAddress = item.address ? item.address.toString().replace(/\n/g, '<br>').replace(/\r/g, '') : '';
+                    // ปรับแต่งการแสดงผลที่อยู่บนตารางหลังบ้าน (ลบคำว่า [DID] เพื่อความสวยงามในระบบตารางด้วย)
+                    let rawAddr = item.address ? item.address.toString() : '';
+                    let displayAddress = rawAddr.replace('[DID]', '📌 [DID] ').replace(/\n/g, '<br>').replace(/\r/g, '');
 
                     html += `<tr id="tr-${item.rowNum}" class="${isPrinted ? 'printed-row' : ''}">
                         <td class="chk-col">
@@ -183,7 +185,7 @@
             renderTable([...filteredData].reverse());
         }
 
-        /* 🌟 แก้ไขจุดนี้: ฟังก์ชันพิมพ์ที่คอยตรวจเช็กคำว่า "โทร:" */
+        /* 🌟 ฟังก์ชันพิมพ์ 4x6: รองรับการขยายขนาด DID ขึ้น 2 เท่า และซ่อนคำว่า โทร: หากเบอร์ว่าง */
         function printLabelByRowNum(rowNum) {
             const item = rawData.find(r => r.rowNum === rowNum);
             if (!item) return;
@@ -195,15 +197,24 @@
 
             const rowKey = 'row_' + rowNum;
 
-            // 🌟 ตรวจสอบลอจิก: ถ้ามีเบอร์โทรค่อยแสดงบรรทัดโทรศัพท์ ถ้าไม่มีให้เป็นค่าว่างไปเลย
+            // ลอจิกจัดการเบอร์โทร: ถ้าไม่มีเบอร์ ไม่ต้องแสดงแท็กและคำว่า "โทร: "
             let phoneLineHtml = '';
             if (formattedPhone !== '') {
                 phoneLineHtml = `<div style="margin-top: 8px;">โทร: ${formattedPhone}</div>`;
             }
 
+            // ลอจิกจัดการ DID: ถ้าเจอแท็ก [DID] ให้สั่งขยายตัวหนังสือเป็น 2 เท่า (40pt ตัวหนา)
+            let finalAddressDisplay = item.address || '';
+            let addressStyle = 'margin-top: 8px;'; 
+            
+            if (finalAddressDisplay.includes('[DID]')) {
+                finalAddressDisplay = finalAddressDisplay.replace('[DID]', ''); // ลบแท็กออกตอนพิมพ์
+                addressStyle = 'margin-top: 12px; font-size: 40pt; font-weight: bold; color: #000; word-break: break-all;'; 
+            }
+
             document.getElementById('print-content').innerHTML = `
                 <div>${item.name || ''}</div>
-                <div style="margin-top: 8px;">${item.address || ''}</div>
+                <div style="${addressStyle}">${finalAddressDisplay}</div>
                 ${phoneLineHtml}
             `;
             window.print();

@@ -16,6 +16,12 @@
         label { display: block; margin-bottom: 6px; color: #333; font-size: 15px; font-weight: bold; }
         input, textarea { width: 100%; padding: 12px 14px; margin-bottom: 20px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
         input:focus, textarea:focus { border-color: #28a745; outline: none; box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); }
+        
+        /* สไตล์สำหรับ Checkbox DID */
+        .did-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px dashed #28a745; }
+        .did-container input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+        .did-container label { margin: 0; cursor: pointer; color: #1e4620; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+
         button { width: 100%; padding: 14px; background: linear-gradient(135deg, #28a745, #1e7e34); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: all 0.2s; }
         button:hover { background: linear-gradient(135deg, #218838, #19692c); }
     </style>
@@ -28,8 +34,13 @@
             <label>ชื่อ-นามสกุล:</label>
             <input type="text" name="name" required placeholder="เช่น นายสมชาย สายลุย">
             
-            <label>ที่อยู่:</label>
-            <textarea name="address" rows="4" required placeholder="กรอกที่อยู่สำหรับจัดส่งให้ครบถ้วน"></textarea>
+            <div class="did-container">
+                <input type="checkbox" id="isDid" name="isDid" onchange="toggleDidPlaceholder()">
+                <label for="isDid">📌 ใช้ที่อยู่แบบ Digital Post ID (DID) <span style="font-size:11px; color:#666;">(ขยายขนาดตัวอักษร 2 เท่า)</span></label>
+            </div>
+
+            <label id="addressLabel">ที่อยู่:</label>
+            <textarea id="addressInput" name="address" rows="4" required placeholder="กรอกที่อยู่สำหรับจัดส่งให้ครบถ้วน"></textarea>
             
             <label>เบอร์โทร (ไม่บังคับกรอก):</label>
             <input type="text" name="phone" inputmode="numeric" maxlength="10" placeholder="เช่น 0812345678 (ใส่หรือไม่ใส่ก็ได้)">
@@ -44,6 +55,20 @@
     <script>
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
 
+        // ช่วยเปลี่ยนคำแนะนำในช่องกรอกเมื่อสลับโหมด DID
+        function toggleDidPlaceholder() {
+            const isDidChecked = document.getElementById('isDid').checked;
+            const addressInput = document.getElementById('addressInput');
+            const addressLabel = document.getElementById('addressLabel');
+            if (isDidChecked) {
+                addressLabel.innerHTML = "รหัส Digital Post ID (DID):";
+                addressInput.placeholder = "กรอกรหัส DID ของท่าน";
+            } else {
+                addressLabel.innerHTML = "ที่อยู่:";
+                addressInput.placeholder = "กรอกที่อยู่สำหรับจัดส่งให้ครบถ้วน";
+            }
+        }
+
         document.getElementById('shippingForm').addEventListener('submit', function(e) {
             e.preventDefault(); 
             
@@ -52,21 +77,18 @@
             btn.disabled = true;
 
             const nameVal = this.elements['name'].value;
-            const addressVal = this.elements['address'].value;
+            let addressVal = this.elements['address'].value;
             const quantityVal = this.elements['quantity'].value;
+            const isDidChecked = document.getElementById('isDid').checked;
             
-            const rawPhone = this.elements['phone'].value.trim();
-            
-            // 🌟 แก้ลอจิกหน้าบ้านส่งไปดัดหลัง Apps Script: 
-            // ถ้าไม่กรอกเบอร์โทร แทนที่จะส่งค่าว่างเปล่า (ซึ่งจะทำให้สคริปต์หลังบ้านเติมคำว่า "โทร: " ค้างไว้)
-            // เราจะส่งคำสั่งย้อนกลับไปล้างบรรทัดว่าง เพื่อให้หลังบ้านไม่พิมพ์คำว่า "โทร:" ออกมาโชว์ครับ
-            let phoneVal = "";
-            if (rawPhone !== "") {
-                phoneVal = "โทร: " + rawPhone;
-            } else {
-                // ส่งเป็นค่าว่างพิเศษ เพื่อให้ฝั่งพิมพ์จ่าหน้าไม่เกิดช่องโหว่คำว่า "โทร:"
-                phoneVal = " "; 
+            // 🌟 ลอจิกสำคัญ: ถ้าติ๊ก DID ให้แอบใส่แท็ก [DID] นำหน้าข้อความที่อยู่ 
+            // เพื่อส่งสัญญาณไปบอกระบบหลังบ้านให้ขยายขนาดอักษรตอนพิมพ์ครับ
+            if (isDidChecked) {
+                addressVal = "[DID]" + addressVal;
             }
+
+            const rawPhone = this.elements['phone'].value.trim();
+            const phoneVal = rawPhone !== "" ? "โทร: " + rawPhone : " ";
 
             const uploadParams = new URLSearchParams();
             uploadParams.append('name', nameVal);
