@@ -31,8 +31,8 @@
             <label>ที่อยู่:</label>
             <textarea name="address" rows="4" required placeholder="กรอกที่อยู่สำหรับจัดส่งให้ครบถ้วน"></textarea>
             
-            <label>เบอร์โทร (ตัวเลข 10 หลัก):</label>
-            <input type="text" name="phone" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" placeholder="เช่น 0812345678">
+            <label>เบอร์โทร (ไม่บังคับกรอก):</label>
+            <input type="text" name="phone" inputmode="numeric" maxlength="10" placeholder="เช่น 0812345678 (ใส่หรือไม่ใส่ก็ได้)">
             
             <label>จำนวนที่ต้องการพิมพ์ (ใบ):</label>
             <input type="number" id="quantity" name="quantity" min="1" value="1" required placeholder="ระบุจำนวนใบ เช่น 1">
@@ -42,7 +42,6 @@
     </div>
 
     <script>
-        // 🌟 แก้ไขลิงก์เป็น URL ของเว็บแอปตัวจริงที่ถูกต้องเรียบร้อยแล้ว (ลงท้ายด้วย /exec)
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
 
         document.getElementById('shippingForm').addEventListener('submit', function(e) {
@@ -54,14 +53,25 @@
 
             const nameVal = this.elements['name'].value;
             const addressVal = this.elements['address'].value;
-            const phoneVal = this.elements['phone'].value;
             const quantityVal = this.elements['quantity'].value;
+            
+            const rawPhone = this.elements['phone'].value.trim();
+            
+            // 🌟 แก้ลอจิกหน้าบ้านส่งไปดัดหลัง Apps Script: 
+            // ถ้าไม่กรอกเบอร์โทร แทนที่จะส่งค่าว่างเปล่า (ซึ่งจะทำให้สคริปต์หลังบ้านเติมคำว่า "โทร: " ค้างไว้)
+            // เราจะส่งคำสั่งย้อนกลับไปล้างบรรทัดว่าง เพื่อให้หลังบ้านไม่พิมพ์คำว่า "โทร:" ออกมาโชว์ครับ
+            let phoneVal = "";
+            if (rawPhone !== "") {
+                phoneVal = "โทร: " + rawPhone;
+            } else {
+                // ส่งเป็นค่าว่างพิเศษ เพื่อให้ฝั่งพิมพ์จ่าหน้าไม่เกิดช่องโหว่คำว่า "โทร:"
+                phoneVal = " "; 
+            }
 
-            // แพ็กข้อมูลส่งในรูปแบบ x-www-form-urlencoded เพื่อให้หลังบ้าน Apps Script รับข้อมูลได้แม่นยำที่สุด
             const uploadParams = new URLSearchParams();
             uploadParams.append('name', nameVal);
             uploadParams.append('address', addressVal);
-            uploadParams.append('phone', phoneVal);
+            uploadParams.append('phone', phoneVal); 
             uploadParams.append('quantity', quantityVal);
 
             fetch(scriptUrl, {

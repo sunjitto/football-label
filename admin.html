@@ -104,8 +104,8 @@
 
     <script>
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxVya7YlZv7bjY9slHPydvZO7MwJqy8Ein4PKYqfoz_3SwjJhLqALGLYhyVdjfzfPfUVw/exec";
-        let rawData = []; // เก็บข้อมูลดิบเรียงตามจริงจากชีตเพื่อใช้อ้างอิง rowNum
-        let viewData = []; // เก็บข้อมูลที่กำลังแสดงผลบนตารางเว็บ (เช่น ตอนกลับหัว หรือตอนค้นหาคำ)
+        let rawData = []; 
+        let viewData = []; 
         let printedRows = JSON.parse(localStorage.getItem('printed_rows_list_v3')) || [];
 
         function loadData() {
@@ -114,9 +114,7 @@
             fetch(scriptUrl)
             .then(res => res.json())
             .then(data => {
-                // กรองเอาแถวที่ใช้งานจริง และเก็บไว้ในความทรงจำหลักแบบห้ามกลับหัว
                 rawData = data.filter(item => item.name || item.address); 
-                // ตอนเอาไปโชว์ในตาราง ให้คัดลอกออกมาแล้วค่อยกลับหัว (ใหม่ขึ้นก่อน)
                 let displayData = [...rawData].reverse();
                 renderTable(displayData);
             })
@@ -182,13 +180,11 @@
                        qtyStr.includes(searchText) ||
                        (item.phone && item.phone.toString().toLowerCase().includes(searchText));
             });
-            // ค้นหาเสร็จแล้วให้กลับหัวโชว์จากใหม่ไปเก่า
             renderTable([...filteredData].reverse());
         }
 
-        /* 🌟 ฟังก์ชันพิมพ์แบบเจาะจงเลขแถวชีต แม่นยำที่สุด */
+        /* 🌟 แก้ไขจุดนี้: ฟังก์ชันพิมพ์ที่คอยตรวจเช็กคำว่า "โทร:" */
         function printLabelByRowNum(rowNum) {
-            // วิ่งหาข้อมูลจากอาเรย์ต้นฉบับดั้งเดิมด้วยเลข rowNum
             const item = rawData.find(r => r.rowNum === rowNum);
             if (!item) return;
 
@@ -199,10 +195,16 @@
 
             const rowKey = 'row_' + rowNum;
 
+            // 🌟 ตรวจสอบลอจิก: ถ้ามีเบอร์โทรค่อยแสดงบรรทัดโทรศัพท์ ถ้าไม่มีให้เป็นค่าว่างไปเลย
+            let phoneLineHtml = '';
+            if (formattedPhone !== '') {
+                phoneLineHtml = `<div style="margin-top: 8px;">โทร: ${formattedPhone}</div>`;
+            }
+
             document.getElementById('print-content').innerHTML = `
                 <div>${item.name || ''}</div>
                 <div style="margin-top: 8px;">${item.address || ''}</div>
-                <div style="margin-top: 8px;">โทร: ${formattedPhone}</div>
+                ${phoneLineHtml}
             `;
             window.print();
 
