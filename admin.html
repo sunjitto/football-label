@@ -131,6 +131,9 @@
             } else {
                 data.forEach((item, index) => {
                     let formattedPhone = item.phone ? item.phone.toString().trim() : '';
+                    // ลบคำว่า "โทร:" หรือ "โทร" ออกเพื่อการจัดระเบียบตารางในระบบหลังบ้าน
+                    formattedPhone = formattedPhone.replace(/โทร\s*:\s*/g, '').replace(/โทร/g, '').trim();
+                    
                     if (formattedPhone && formattedPhone.length === 9 && !formattedPhone.startsWith('0')) {
                         formattedPhone = '0' + formattedPhone;
                     }
@@ -139,7 +142,6 @@
                     const rowKey = 'row_' + item.rowNum; 
                     const isPrinted = printedRows.includes(rowKey);
 
-                    // ปรับแต่งการแสดงผลที่อยู่บนตารางหลังบ้าน (ลบคำว่า [DID] เพื่อความสวยงามในระบบตารางด้วย)
                     let rawAddr = item.address ? item.address.toString() : '';
                     let displayAddress = rawAddr.replace('[DID]', '📌 [DID] ').replace(/\n/g, '<br>').replace(/\r/g, '');
 
@@ -185,30 +187,34 @@
             renderTable([...filteredData].reverse());
         }
 
-        /* 🌟 ฟังก์ชันพิมพ์ 4x6: รองรับการขยายขนาด DID ขึ้น 2 เท่า และซ่อนคำว่า โทร: หากเบอร์ว่าง */
+        /* 🌟 ฟังก์ชันพิมพ์ 4x6: แก้ไขบั๊ก "โทร:" เบิ้ลซ้ำเรียบร้อย 100% */
         function printLabelByRowNum(rowNum) {
             const item = rawData.find(r => r.rowNum === rowNum);
             if (!item) return;
 
             let formattedPhone = item.phone ? item.phone.toString().trim() : '';
+            
+            // 🔥 ไม้ตายแก้บั๊กคำเบิ้ล: ล้างคำว่า "โทร:" หรือ "โทร" ทุกรูปแบบออกจากตัวแปรเบอร์โทรศัพท์ก่อน
+            formattedPhone = formattedPhone.replace(/โทร\s*:\s*/g, '').replace(/โทร/g, '').trim();
+
             if (formattedPhone && formattedPhone.length === 9 && !formattedPhone.startsWith('0')) {
                 formattedPhone = '0' + formattedPhone;
             }
 
             const rowKey = 'row_' + rowNum;
 
-            // ลอจิกจัดการเบอร์โทร: ถ้าไม่มีเบอร์ ไม่ต้องแสดงแท็กและคำว่า "โทร: "
+            // ตรวจสอบ: ถ้ามีเบอร์โทรเหลืออยู่จริง ๆ ค่อยขึ้นบรรทัดใหม่พร้อมคำว่า "โทร: " เพียงคำเดียว
             let phoneLineHtml = '';
             if (formattedPhone !== '') {
                 phoneLineHtml = `<div style="margin-top: 8px;">โทร: ${formattedPhone}</div>`;
             }
 
-            // ลอจิกจัดการ DID: ถ้าเจอแท็ก [DID] ให้สั่งขยายตัวหนังสือเป็น 2 เท่า (40pt ตัวหนา)
+            // ลอจิกจัดการ DID
             let finalAddressDisplay = item.address || '';
             let addressStyle = 'margin-top: 8px;'; 
             
             if (finalAddressDisplay.includes('[DID]')) {
-                finalAddressDisplay = finalAddressDisplay.replace('[DID]', ''); // ลบแท็กออกตอนพิมพ์
+                finalAddressDisplay = finalAddressDisplay.replace('[DID]', ''); 
                 addressStyle = 'margin-top: 12px; font-size: 40pt; font-weight: bold; color: #000; word-break: break-all;'; 
             }
 
@@ -274,6 +280,7 @@
                 const item = rawData.find(r => r.rowNum === rNum);
                 if(item) {
                     let phoneStr = item.phone ? item.phone.toString().trim() : '';
+                    phoneStr = phoneStr.replace(/โทร\s*:\s*/g, '').replace(/โทร/g, '').trim();
                     if (phoneStr && phoneStr.length === 9 && !phoneStr.startsWith('0')) {
                         phoneStr = '0' + phoneStr;
                     }
